@@ -15,6 +15,7 @@
         .product-card:hover { transform: translateY(-10px); transition: 0.4s ease; }
         .admin-hidden { display: none; }
         .thumbnail-active { border: 3px solid #EAB308; transform: scale(1.1); }
+        .star-rating { color: #EAB308; }
     </style>
 </head>
 <body class="bg-gray-100 text-slate-900">
@@ -28,11 +29,14 @@
                 <a href="#shop" class="hover:text-yellow-500 transition">Shop</a>
                 <a href="#admin" onclick="toggleAdmin()" class="hover:text-yellow-500 transition">Admin</a>
             </div>
-            <div class="relative cursor-pointer" onclick="toggleCart()">
-                <span class="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs rounded-full px-1.5 py-0.5 font-bold" id="cart-count">0</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l1.415 1.414L11 4h7l3 3v7a3 3 0 01-3 3H4a3 3 0 01-3-3V3z" />
-                </svg>
+            <div class="flex items-center gap-4">
+                <div class="relative cursor-pointer" onclick="toggleCart()">
+                    <span class="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs rounded-full px-1.5 py-0.5 font-bold" id="cart-count">0</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l1.415 1.414L11 4h7l3 3v7a3 3 0 01-3 3H4a3 3 0 01-3-3V3z" />
+                    </svg>
+                </div>
+                <button onclick="toggleAdmin()" class="md:hidden bg-yellow-600 text-white px-3 py-1 rounded text-xs">Admin</button>
             </div>
         </div>
     </nav>
@@ -70,22 +74,65 @@
 
     <!-- PRODUCT MODAL -->
     <div id="product-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-5xl rounded-3xl overflow-hidden flex flex-col md:flex-row relative">
+        <div class="bg-white w-full max-w-6xl rounded-3xl overflow-hidden flex flex-col md:flex-row relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-3xl font-bold text-gray-500 z-10">&times;</button>
             
-            <!-- Image Gallery -->
-            <div class="w-full md:w-1/2 p-4 flex flex-col gap-4">
-                <img id="modal-main-img" src="" class="w-full h-[400px] object-cover rounded-2xl">
+            <!-- Image & Video Gallery -->
+            <div class="w-full md:w-1/2 p-6 flex flex-col gap-4 bg-gray-50">
+                <div id="modal-media-container" class="w-full h-[400px] bg-black rounded-2xl overflow-hidden shadow-lg">
+                    <img id="modal-main-img" src="" class="w-full h-full object-contain">
+                </div>
                 <div id="modal-thumbnails" class="flex gap-2 overflow-x-auto pb-2"></div>
             </div>
 
             <div class="w-full md:w-1/2 p-8">
                 <span id="modal-cat" class="text-yellow-600 font-bold text-sm uppercase tracking-widest">Category</span>
-                <h3 id="modal-name" class="text-3xl font-bold mt-2 mb-4">Product Name</h3>
-                <p id="modal-price" class="text-2xl font-bold text-slate-800 mb-4">Rs. 0</p>
-                <p id="modal-desc" class="text-gray-600 mb-6"></p>
+                <h3 id="modal-name" class="text-3xl font-bold mt-2 mb-2">Product Name</h3>
+                <div id="modal-rating" class="flex items-center gap-1 mb-4 star-rating"></div>
+                <p id="modal-price" class="text-2xl font-bold text-slate-800 mb-6">Rs. 0</p>
+                
+                <div class="space-y-6 mb-8">
+                    <div>
+                        <h4 class="font-bold text-slate-900 border-b pb-1 mb-2">Description</h4>
+                        <p id="modal-desc" class="text-gray-600 text-sm leading-relaxed"></p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 border-b pb-1 mb-2">Specifications</h4>
+                        <p id="modal-specs" class="text-gray-600 text-sm leading-relaxed">Premium Metal Finish, Durable & Weatherproof.</p>
+                    </div>
+                </div>
+
                 <div id="modal-stock-info" class="mb-6 p-3 rounded-lg text-sm font-semibold"></div>
-                <button id="modal-btn" onclick="addToCartFromModal()" class="w-full py-4 rounded-xl font-bold text-white transition shadow-lg"></button>
+
+                <!-- Quantity Selector -->
+                <div class="flex items-center gap-4 mb-6">
+                    <span class="font-bold">Quantity:</span>
+                    <div class="flex items-center border rounded-lg overflow-hidden bg-gray-50">
+                        <button onclick="updateModalQty(-1)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 font-bold">-</button>
+                        <span id="modal-qty" class="px-4 py-1 font-bold">1</span>
+                        <button onclick="updateModalQty(1)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 font-bold">+</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="modal-btn" onclick="addToCartFromModal()" class="py-4 rounded-xl font-bold text-white transition shadow-lg"></button>
+                    <button onclick="buyNow()" class="py-4 rounded-xl font-bold text-slate-900 bg-yellow-500 hover:bg-yellow-400 transition shadow-lg">Buy Now</button>
+                </div>
+
+                <!-- Review Section -->
+                <div class="mt-10 border-t pt-6">
+                    <h4 class="font-bold text-xl mb-4">Customer Reviews</h4>
+                    <div id="reviews-list" class="space-y-4 max-h-40 overflow-y-auto mb-4"></div>
+                    <div class="bg-gray-50 p-4 rounded-xl border">
+                        <p class="text-xs font-bold mb-2">Write a Review:</p>
+                        <div class="flex gap-2 mb-2">
+                            <input type="number" id="rev-star" min="1" max="5" value="5" class="w-16 p-1 border rounded text-center"> Stars
+                            <input type="text" id="rev-name" placeholder="Your Name" class="flex-1 p-1 border rounded text-sm">
+                        </div>
+                        <textarea id="rev-text" placeholder="Your feedback..." class="w-full p-2 border rounded text-sm mb-2"></textarea>
+                        <button onclick="submitReview()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold">Submit Review</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -108,24 +155,16 @@
                     <input type="text" id="cust-name" placeholder="Full Name" class="w-full border p-3 rounded-xl outline-none">
                     <input type="text" id="cust-phone" placeholder="Phone Number" class="w-full border p-3 rounded-xl outline-none">
                     <textarea id="cust-address" placeholder="Complete Address" class="w-full border p-3 rounded-xl outline-none"></textarea>
-                    
                     <select id="payment-method" onchange="handlePaymentChange()" class="w-full border p-3 rounded-xl outline-none">
                         <option value="Cash on Delivery">Cash on Delivery</option>
                         <option value="EasyPaisa">EasyPaisa</option>
                         <option value="Bank Transfer">Bank Transfer</option>
                     </select>
-
-                    <!-- PAYMENT DETAILS BOX -->
-                    <div id="payment-details" class="hidden p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800">
-                        <!-- Dynamic Content -->
-                    </div>
-
-                    <!-- SCREENSHOT UPLOAD -->
+                    <div id="payment-details" class="hidden p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800"></div>
                     <div id="screenshot-upload" class="hidden">
                         <label class="block text-xs font-bold text-gray-500 mb-1">Upload Payment Screenshot:</label>
                         <input type="file" id="pay-proof" accept="image/*" class="w-full text-sm border p-2 rounded-xl">
                     </div>
-
                     <button onclick="processOrder()" id="order-btn" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition shadow-lg">Confirm Order via WhatsApp</button>
                 </div>
             </div>
@@ -133,11 +172,11 @@
     </div>
 
     <!-- ADMIN PANEL -->
-    <div id="admin-panel" class="admin-hidden fixed inset-0 bg-gray-100 z-[100] overflow-y-auto p-6">
-        <div class="container mx-auto max-w-5xl bg-white p-8 rounded-3xl shadow-2xl">
+    <div id="admin-panel" class="admin-hidden fixed inset-0 bg-gray-100 z-[100] overflow-y-auto p-4 md:p-6">
+        <div class="container mx-auto max-w-5xl bg-white p-4 md:p-8 rounded-3xl shadow-2xl">
             <div class="flex justify-between items-center mb-10 border-b pb-6">
-                <h2 class="text-3xl font-bold">Dashboard</h2>
-                <button onclick="toggleAdmin()" class="bg-red-500 text-white px-6 py-2 rounded-full font-bold">Logout</button>
+                <h2 class="text-2xl md:text-3xl font-bold">Management Dashboard</h2>
+                <button onclick="toggleAdmin()" class="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm">Logout</button>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div class="lg:col-span-1 bg-slate-50 p-6 rounded-2xl border">
@@ -152,10 +191,11 @@
                         </select>
                         <input type="number" id="p-price" placeholder="Price (PKR)" class="w-full border p-3 rounded-xl">
                         <input type="number" id="p-shipping" placeholder="Shipping Cost (PKR)" class="w-full border p-3 rounded-xl">
-                        <input type="text" id="p-img" placeholder="Image URLs (Separate by comma , )" class="w-full border p-3 rounded-xl">
-                        <textarea id="p-desc" placeholder="Detailed Description" class="w-full border p-3 rounded-xl"></textarea>
+                        <input type="text" id="p-img" placeholder="Images (Comma separated URLs)" class="w-full border p-3 rounded-xl">
+                        <input type="text" id="p-video" placeholder="Video URL (YouTube Embed)" class="w-full border p-3 rounded-xl">
+                        <textarea id="p-desc" placeholder="Description" class="w-full border p-3 rounded-xl"></textarea>
                         <div class="flex items-center space-x-3"><input type="checkbox" id="p-stock" checked> <label>In Stock?</label></div>
-                        <input type="text" id="p-delivery" placeholder="Delivery Time (e.g. 1 Week)" class="w-full border p-3 rounded-xl">
+                        <input type="text" id="p-delivery" placeholder="Delivery Time (e.g. 7 days)" class="w-full border p-3 rounded-xl">
                         <button onclick="saveProduct()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Save Product</button>
                     </div>
                 </div>
@@ -166,11 +206,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, setDoc, query, where, getDocs as getQueryDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-        // 🔴 REPLACE WITH YOUR CONFIG
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyA071KVv67tAnSOPZy6uYnPDeg0IuF7zbg",
   authDomain: "metal-canvas-pk.firebaseapp.com",
   databaseURL: "https://metal-canvas-pk-default-rtdb.firebaseio.com",
@@ -184,10 +223,12 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
         const productsCol = collection(db, "products");
+        const reviewsCol = collection(db, "reviews");
 
         let allProducts = [];
         let cart = [];
         let selectedProduct = null;
+        let currentQty = 1;
 
         async function loadProducts() {
             const snapshot = await getDocs(productsCol);
@@ -211,40 +252,56 @@
                     <span class="text-xs font-bold text-yellow-600 uppercase">${p.category}</span>
                     <h4 class="font-bold text-lg mb-1">${p.name}</h4>
                     <p class="text-xl font-bold text-slate-900 mb-4">Rs. ${p.price}</p>
-                    <button class="${p.inStock ? 'bg-slate-900' : 'bg-blue-600'} text-white w-full py-2 rounded-lg font-semibold">${p.inStock ? 'View Details' : 'Book Now'}</button>
+                    <button class="${p.inStock ? 'bg-slate-900' : 'bg-blue-600'} text-white w-full py-2 rounded-lg font-semibold">${p.inStock ? 'View Details' : 'Pre-Order'}</button>
                 </div>
             `).join('');
         }
 
-        window.openModal = (id) => {
+        window.openModal = async (id) => {
             selectedProduct = allProducts.find(p => p.id === id);
-            const images = Array.isArray(selectedProduct.images) ? selectedProduct.images : [selectedProduct.img];
+            currentQty = 1;
+            document.getElementById('modal-qty').innerText = currentQty;
             
+            const images = Array.isArray(selectedProduct.images) ? selectedProduct.images : [selectedProduct.img];
             document.getElementById('modal-main-img').src = images[0];
             document.getElementById('modal-name').innerText = selectedProduct.name;
             document.getElementById('modal-cat').innerText = selectedProduct.category;
             document.getElementById('modal-price').innerText = `Rs. ${selectedProduct.price}`;
             document.getElementById('modal-desc').innerText = selectedProduct.desc;
+            
+            // Video integration
+            const mediaContainer = document.getElementById('modal-media-container');
+            if(selectedProduct.video) {
+                let videoUrl = selectedProduct.video;
+                if(videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    let embed = videoUrl.replace('watch?v=', 'embed/');
+                    mediaContainer.innerHTML = `<iframe src="${embed}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>`;
+                } else {
+                    mediaContainer.innerHTML = `<video src="${videoUrl}" controls class="w-full h-full"></video>`;
+                }
+            } else {
+                mediaContainer.innerHTML = `<img src="${images[0]}" class="w-full h-full object-contain">`;
+            }
 
-            // Render Thumbnails
-            const thumbContainer = document.getElementById('modal-thumbnails');
-            thumbContainer.innerHTML = images.map((img, idx) => `
-                <img src="${img}" onclick="changeMainImg('${img}', this)" class="w-20 h-20 object-cover rounded-lg cursor-pointer border-2 ${idx===0?'thumbnail-active':''}" onerror="this.src='https://via.placeholder.com/100'">
+            document.getElementById('modal-thumbnails').innerHTML = images.map((img, idx) => `
+                <img src="${img}" onclick="changeMainImg('${img}', this)" class="w-20 h-20 object-cover rounded-lg cursor-pointer border-2 ${idx===0?'thumbnail-active':''}">
             `).join('');
 
             const stockInfo = document.getElementById('modal-stock-info');
             const modalBtn = document.getElementById('modal-btn');
             if(selectedProduct.inStock) {
-                stockInfo.innerText = "✅ In Stock & Ready";
+                stockInfo.innerText = "✅ In Stock & Ready for Delivery";
                 stockInfo.className = "mb-6 p-3 rounded-lg text-sm font-semibold bg-green-100 text-green-700";
                 modalBtn.innerText = "Add to Cart";
                 modalBtn.className = "w-full py-4 rounded-xl font-bold text-white bg-slate-900";
             } else {
-                stockInfo.innerText = `⏳ Out of Stock. Delivery: ${selectedProduct.deliveryTime}`;
+                stockInfo.innerText = `⏳ Out of Stock. Pre-order to get it in ${selectedProduct.deliveryTime || '7 days'}`;
                 stockInfo.className = "mb-6 p-3 rounded-lg text-sm font-semibold bg-blue-100 text-blue-700";
-                modalBtn.innerText = "Pre-Book Now";
+                modalBtn.innerText = `Pre-Order Now`;
                 modalBtn.className = "w-full py-4 rounded-xl font-bold text-white bg-blue-600";
             }
+
+            loadReviews(selectedProduct.id);
             document.getElementById('product-modal').classList.remove('hidden');
         };
 
@@ -254,12 +311,26 @@
             el.classList.add('thumbnail-active');
         };
 
-        window.closeModal = () => document.getElementById('product-modal').classList.add('hidden');
+        window.updateModalQty = (val) => {
+            currentQty = Math.max(1, currentQty + val);
+            document.getElementById('modal-qty').innerText = currentQty;
+        };
+
+        window.closeModal = () => {
+            document.getElementById('product-modal').classList.add('hidden');
+            document.getElementById('modal-media-container').innerHTML = `<img id="modal-main-img" src="" class="w-full h-full object-contain">`;
+        };
 
         window.addToCartFromModal = () => {
-            cart.push(selectedProduct);
+            cart.push({ ...selectedProduct, qty: currentQty });
             updateCartUI();
             closeModal();
+        };
+
+        window.buyNow = () => {
+            cart = [{ ...selectedProduct, qty: currentQty }];
+            updateCartUI();
+            toggleCart();
         };
 
         function updateCartUI() {
@@ -269,21 +340,34 @@
                 <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border">
                     <div class="flex items-center gap-3">
                         <img src="${Array.isArray(item.images) ? item.images[0] : item.img}" class="w-12 h-12 object-cover rounded-lg">
-                        <div><p class="font-bold text-sm">${item.name}</p><p class="text-xs text-gray-500">Rs. ${item.price}</p></div>
+                        <div>
+                            <p class="font-bold text-sm">${item.name}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500">Rs. ${item.price} x ${item.qty}</span>
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="removeFromCart(${index})" class="text-red-500 font-bold">&times;</button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateCartQty(${index}, -1)" class="bg-gray-200 px-2 rounded">-</button>
+                        <span class="text-sm font-bold">${item.qty}</span>
+                        <button onclick="updateCartQty(${index}, 1)" class="bg-gray-200 px-2 rounded">+</button>
+                        <button onclick="removeFromCart(${index})" class="text-red-500 ml-2 font-bold">&times;</button>
+                    </div>
                 </div>
             `).join('');
 
-            let itemsTotal = cart.reduce((sum, item) => sum + parseInt(item.price), 0);
-            
-            // Dynamic Shipping: Sum of all product shipping costs
+            let itemsTotal = cart.reduce((sum, item) => sum + (parseInt(item.price) * item.qty), 0);
             let totalShipping = cart.reduce((sum, item) => sum + (parseInt(item.shippingCost) || 0), 0);
 
             document.getElementById('items-total').innerText = `Rs. ${itemsTotal}`;
             document.getElementById('shipping-cost').innerText = `Rs. ${totalShipping}`;
             document.getElementById('cart-total').innerText = `Rs. ${itemsTotal + totalShipping}`;
         }
+
+        window.updateCartQty = (index, val) => {
+            cart[index].qty = Math.max(1, cart[index].qty + val);
+            updateCartUI();
+        };
 
         window.removeFromCart = (index) => {
             cart.splice(index, 1);
@@ -294,18 +378,14 @@
             const method = document.getElementById('payment-method').value;
             const details = document.getElementById('payment-details');
             const upload = document.getElementById('screenshot-upload');
-            
             if(method === "EasyPaisa") {
-                details.innerHTML = `<strong>EasyPaisa Account:</strong><br>Number: 03310423620<br>Name: Hamza Idrees`;
-                details.classList.remove('hidden');
-                upload.classList.remove('hidden');
+                details.innerHTML = `<strong class="text-lg">EasyPaisa Account:</strong><br>Number: 03310423620<br>Name: Hamza Idrees`;
+                details.classList.remove('hidden'); upload.classList.remove('hidden');
             } else if(method === "Bank Transfer") {
-                details.innerHTML = `<strong>Bank Account Details:</strong><br>Bank: Dubai Islamic Bank<br>Account No: 0939972001<br>Name: Hamza Idrees`;
-                details.classList.remove('hidden');
-                upload.classList.remove('hidden');
+                details.innerHTML = `<strong class="text-lg">Bank Account Details:</strong><br>Bank: Dubai Islamic Bank<br>Account No: 0939972001<br>Name: Hamza Idrees`;
+                details.classList.remove('hidden'); upload.classList.remove('hidden');
             } else {
-                details.classList.add('hidden');
-                upload.classList.add('hidden');
+                details.classList.add('hidden'); upload.classList.add('hidden');
             }
         };
 
@@ -320,36 +400,40 @@
 
             if(!name || !phone || !addr) return alert("Please fill all details");
 
-            btn.innerText = "Processing...";
+            btn.innerText = "Processing Order...";
             btn.disabled = true;
 
             let proofUrl = "No screenshot provided";
             const file = document.getElementById('pay-proof').files[0];
             if(file) {
-                try {
-                    const storageRef = ref(storage, `payments/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    proofUrl = await getDownloadURL(storageRef);
-                } catch (e) {
-                    alert("Proof upload failed!");
-                    btn.innerText = "Confirm Order via WhatsApp";
-                    btn.disabled = false;
-                    return;
-                }
+                const storageRef = ref(storage, `payments/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                proofUrl = await getDownloadURL(storageRef);
             }
 
             const invoiceNo = "MC-" + Math.floor(Math.random() * 1000000);
-            let itemsText = cart.map(p => `- ${p.name} (Rs. ${p.price})`).join('\n');
+            let itemsText = cart.map(p => `- ${p.name} x${p.qty} (Rs. ${p.price})`).join('\n');
 
-            const whatsappMsg = `📦 *NEW ORDER: ${invoiceNo}*%0A----------------------------%0A👤 *Customer:* ${name}%0A📞 *Phone:* ${phone}%0A📍 *Address:* ${addr}%0A----------------------------%0A🛍 *Items:*%0A${itemsText}%0A----------------------------%0A🚚 *Shipping:* ${shipping}%0A💰 *Grand Total:* ${total}%0A💳 *Payment:* ${pay}%0A🖼 *Proof:* ${proofUrl}%0A----------------------------`;
+            // GENERATE PDF & UPLOAD TO STORAGE FOR ADMIN
+            const pdfBlob = await generateProfessionalPDF(name, phone, addr, cart, total, shipping, invoiceNo, true);
+            let adminPdfUrl = "Link pending...";
+            if(pdfBlob) {
+                const pdfRef = ref(storage, `invoices/${invoiceNo}.pdf`);
+                await uploadBytes(pdfRef, pdfBlob);
+                adminPdfUrl = await getDownloadURL(pdfRef);
+            }
+
+            const whatsappMsg = `📦 *NEW ORDER: ${invoiceNo}*%0A----------------------------%0A👤 *Customer:* ${name}%0A📞 *Phone:* ${phone}%0A📍 *Address:* ${addr}%0A----------------------------%0A🛍 *Items:*%0A${itemsText}%0A----------------------------%0A🚚 *Shipping:* ${shipping}%0A💰 *Grand Total:* ${total}%0A💳 *Payment:* ${pay}%0A🖼 *Proof:* ${proofUrl}%0A📄 *Admin Invoice (PDF):* ${adminPdfUrl}%0A----------------------------`;
             
-            generateProfessionalPDF(name, phone, addr, cart, total, shipping, invoiceNo);
+            // Download for customer
+            generateProfessionalPDF(name, phone, addr, cart, total, shipping, invoiceNo, false);
             window.open(`https://wa.me/923310423620?text=${whatsappMsg}`, '_blank');
+            
             btn.innerText = "Order Placed!";
             btn.disabled = false;
         };
 
-        async function generateProfessionalPDF(name, phone, addr, items, total, shipping, inv) {
+        async function generateProfessionalPDF(name, phone, addr, items, total, shipping, inv, returnBlob) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             doc.setFillColor(15, 23, 42);
@@ -362,10 +446,10 @@
             doc.text(`Invoice: ${inv}`, 14, 50);
             doc.text(`Customer: ${name}`, 14, 56);
             doc.text(`Address: ${addr}`, 14, 62);
-            const tableData = items.map((i, index) => [index + 1, i.name, i.category, i.price]);
+            const tableData = items.map((i, index) => [index + 1, i.name, i.qty, i.price, (i.price * i.qty)]);
             doc.autoTable({
                 startY: 70,
-                head: [['#', 'Product', 'Category', 'Price']],
+                head: [['#', 'Product', 'Qty', 'Price', 'Total']],
                 body: tableData,
                 headStyles: { fillColor: [15, 23, 42] },
             });
@@ -373,8 +457,36 @@
             doc.text(`Shipping Charges: ${shipping}`, 150, finalY);
             doc.setFont(undefined, 'bold');
             doc.text(`Grand Total: ${total}`, 150, finalY + 7);
+            
+            if(returnBlob) return doc.output('blob');
             doc.save(`Invoice_${inv}.pdf`);
         }
+
+        // REVIEWS SYSTEM
+        async function loadReviews(prodId) {
+            const q = query(reviewsCol, where("productId", "==", prodId));
+            const snap = await getQueryDocs(q);
+            const reviews = snap.docs.map(doc => doc.data());
+            document.getElementById('reviews-list').innerHTML = reviews.map(r => `
+                <div class="bg-white p-3 rounded-lg border text-sm">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold">${r.name}</span>
+                        <span class="star-rating">${'★'.repeat(r.star)}${'☆'.repeat(5-r.star)}</span>
+                    </div>
+                    <p class="text-gray-600">${r.text}</p>
+                </div>
+            `).join('') || '<p class="text-xs text-gray-400">No reviews yet. Be the first!</p>';
+        }
+
+        window.submitReview = async () => {
+            const name = document.getElementById('rev-name').value;
+            const star = document.getElementById('rev-star').value;
+            const text = document.getElementById('rev-text').value;
+            if(!name || !text) return alert("Please fill name and review");
+            await addDoc(reviewsCol, { productId: selectedProduct.id, name, star: parseInt(star), text });
+            alert("Review submitted!");
+            loadReviews(selectedProduct.id);
+        };
 
         window.saveProduct = async () => {
             const imgInput = document.getElementById('p-img').value;
@@ -415,8 +527,9 @@
 
         window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
         window.toggleAdmin = () => {
-            const pass = prompt("Password:");
-            if(pass === "admin123") document.getElementById('admin-panel').classList.toggle('admin-hidden');
+            const pass = prompt("Enter Admin Password:");
+            if(pass === "Hamza@0986756") document.getElementById('admin-panel').classList.toggle('admin-hidden');
+            else alert("Wrong Password!");
         };
 
         window.searchProducts = () => {
