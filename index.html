@@ -150,13 +150,13 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script type="module">
-        // Import Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+<script type="module">
+    // Import Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-        // 🔴 REPLACE THIS WITH YOUR OWN FIREBASE CONFIG
-        const firebaseConfig = {
+    // 🔴 REPLACE THIS WITH YOUR OWN FIREBASE CONFIG
+    const firebaseConfig = {
             apiKey: "AIzaSyA071KVv67tAnSOPZy6uYnPDeg0IuF7zbg",
             authDomain: "metal-canvas-pk.firebaseapp.com",
             projectId: "metal-canvas-pk",
@@ -165,44 +165,68 @@
             appId: "1:377162738163:web:b91ae74d420b55aae8ca86"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const productsCol = collection(db, "products");
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const productsCol = collection(db, "products");
 
-        // Global State
-        let allProducts = [];
-        let cart = [];
+    // Global State
+    let allProducts = [];
+    let cart = [];
 
-        // Initialize Page
-        async function loadProducts() {
+    // --- CORE FUNCTIONS ---
+
+    async function loadProducts() {
+        try {
             const snapshot = await getDocs(productsCol);
             allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderProducts(allProducts);
-            renderAdminProducts(allProducts);
+            renderAdminProducts(allProducts); // Now this function exists!
+        } catch (error) {
+            console.error("Error loading products: ", error);
+            alert("Database connection error! Check your Firebase Config and Rules.");
         }
+    }
 
-        function renderProducts(products) {
-            const container = document.getElementById('product-display');
-            container.innerHTML = '';
-            products.forEach(p => {
-                const btnText = p.inStock ? 'Add to Cart' : 'Book Now';
-                const btnColor = p.inStock ? 'bg-yellow-500' : 'bg-blue-600';
-                
-                container.innerHTML += `
-                    <div class="product-card bg-white p-4 rounded-xl shadow-md border">
-                        <img src="${p.img}" class="w-full h-48 object-cover rounded-lg mb-4">
-                        <h4 class="font-bold text-lg">${p.name}</h4>
-                        <p class="text-gray-500 text-sm mb-2">${p.category}</p>
-                        <p class="text-xl font-bold text-slate-800 mb-4">Rs. ${p.price}</p>
-                        ${!p.inStock ? `<p class="text-xs text-red-500 mb-2">Estimated Delivery: ${p.deliveryTime}</p>` : ''}
-                        <button onclick="addToCart('${p.id}')" class="${btnColor} text-white w-full py-2 rounded-lg font-semibold">${btnText}</button>
-                    </div>
-                `;
-            });
-        }
+    function renderProducts(products) {
+        const container = document.getElementById('product-display');
+        if(!container) return;
+        container.innerHTML = '';
+        products.forEach(p => {
+            const btnText = p.inStock ? 'Add to Cart' : 'Book Now';
+            const btnColor = p.inStock ? 'bg-yellow-500' : 'bg-blue-600';
+            
+            container.innerHTML += `
+                <div class="product-card bg-white p-4 rounded-xl shadow-md border">
+                    <img src="${p.img}" class="w-full h-48 object-cover rounded-lg mb-4" onerror="this.src='https://via.placeholder.com/150'">
+                    <h4 class="font-bold text-lg">${p.name}</h4>
+                    <p class="text-gray-500 text-sm mb-2">${p.category}</p>
+                    <p class="text-xl font-bold text-slate-800 mb-4">Rs. ${p.price}</p>
+                    ${!p.inStock ? `<p class="text-xs text-red-500 mb-2">Estimated Delivery: ${p.deliveryTime}</p>` : ''}
+                    <button onclick="addToCart('${p.id}')" class="${btnColor} text-white w-full py-2 rounded-lg font-semibold">${btnText}</button>
+                </div>
+            `;
+        });
+    }
 
-        // Admin functions (Attached to window for HTML access)
-        window.saveProduct = async () => {
+    function renderAdminProducts(products) {
+        const container = document.getElementById('admin-product-list');
+        if(!container) return;
+        container.innerHTML = '';
+        products.forEach(p => {
+            container.innerHTML += `
+                <div class="flex justify-between items-center p-2 border-b text-sm">
+                    <span>${p.name} (Rs. ${p.price})</span>
+                    <button onclick="deleteProduct('${p.id}')" class="text-red-500 font-bold">Delete</button>
+                </div>
+            `;
+        });
+    }
+
+    // --- ADMIN ACTIONS ---
+
+    window.saveProduct = async () => {
+        try {
             const newP = {
                 name: document.getElementById('p-name').value,
                 category: document.getElementById('p-cat').value,
@@ -213,99 +237,111 @@
                 inStock: document.getElementById('p-stock').checked,
                 deliveryTime: document.getElementById('p-delivery').value
             };
+            if(!newP.name || !newP.price) return alert("Name and Price are required!");
+            
             await addDoc(productsCol, newP);
-            alert("Product Added!");
+            alert("Product Added Successfully!");
             loadProducts();
-        };
+        } catch (e) {
+            console.error(e);
+            alert("Error saving product. Check Firebase Rules!");
+        }
+    };
 
-        window.addToCart = (id) => {
-            const prod = allProducts.find(p => p.id === id);
+    window.deleteProduct = async (id) => {
+        if(confirm("Are you sure you want to delete this product?")) {
+            await deleteDoc(doc(db, "products", id));
+            loadProducts();
+        }
+    };
+
+    // --- CART & ORDERING ---
+
+    window.addToCart = (id) => {
+        const prod = allProducts.find(p => p.id === id);
+        if(prod) {
             cart.push(prod);
             updateCartUI();
-        };
+        }
+    };
 
-        function updateCartUI() {
-            document.getElementById('cart-count').innerText = cart.length;
-            const list = document.getElementById('cart-items');
-            list.innerHTML = '';
-            let total = 0;
-            cart.forEach((item, index) => {
-                total += parseInt(item.price);
-                list.innerHTML += `
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <div>
-                            <p class="font-bold">${item.name}</p>
-                            <p class="text-sm">Rs. ${item.price}</p>
-                        </div>
-                        <button onclick="removeFromCart(${index})" class="text-red-500">Remove</button>
+    function updateCartUI() {
+        document.getElementById('cart-count').innerText = cart.length;
+        const list = document.getElementById('cart-items');
+        list.innerHTML = '';
+        let total = 0;
+        cart.forEach((item, index) => {
+            total += parseInt(item.price);
+            list.innerHTML += `
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <p class="font-bold">${item.name}</p>
+                        <p class="text-sm">Rs. ${item.price}</p>
                     </div>
-                `;
-            });
-            document.getElementById('cart-total').innerText = `Rs. ${total}`;
+                    <button onclick="removeFromCart(${index})" class="text-red-500">Remove</button>
+                </div>
+            `;
+        });
+        document.getElementById('cart-total').innerText = `Rs. ${total}`;
+    }
+
+    window.removeFromCart = (index) => {
+        cart.splice(index, 1);
+        updateCartUI();
+    };
+
+    window.processOrder = async () => {
+        const name = document.getElementById('cust-name').value;
+        const phone = document.getElementById('cust-phone').value;
+        const addr = document.getElementById('cust-address').value;
+        const pay = document.getElementById('payment-method').value;
+        const total = document.getElementById('cart-total').innerText;
+
+        if(!name || !phone || !addr) return alert("Please fill all details");
+
+        const invoiceNo = "MC-" + Math.floor(Math.random() * 100000);
+        let productListText = "";
+        cart.forEach(p => productListText += `- ${p.name} (Rs. ${p.price})\n`);
+
+        const whatsappMsg = `📦 *New Order: ${invoiceNo}*%0A--------------------------%0A👤 *Name:* ${name}%0A📞 *Phone:* ${phone}%0A📍 *Address:* ${addr}%0A--------------------------%0A🛍 *Items:*%0A${productListText}%0A--------------------------%0A💰 *Total:* ${total}%0A💳 *Payment:* ${pay}%0A--------------------------`;
+        
+        generatePDF(name, phone, addr, cart, total, invoiceNo);
+        window.open(`https://wa.me/923310423620?text=${whatsappMsg}`, '_blank');
+    };
+
+    async function generatePDF(name, phone, addr, items, total, inv) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(20);
+        doc.text("METAL CANVAS-PK", 105, 20, { align: "center" });
+        doc.setFontSize(12);
+        doc.text(`Invoice No: ${inv}`, 14, 30);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 36);
+        doc.text(`Customer: ${name}`, 14, 42);
+        doc.text(`Phone: ${phone}`, 14, 48);
+        doc.text(`Address: ${addr}`, 14, 54);
+        const tableData = items.map(i => [i.name, i.category, i.price]);
+        doc.autoTable({
+            startY: 65,
+            head: [['Product', 'Category', 'Price']],
+            body: tableData,
+        });
+        doc.text(`Grand Total: ${total}`, 14, doc.lastAutoTable.finalY + 10);
+        doc.save(`Invoice_${inv}.pdf`);
+    }
+
+    window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
+    window.toggleAdmin = () => {
+        const pass = prompt("Enter Admin Password:");
+        if(pass === "admin123") {
+            document.getElementById('admin-panel').classList.toggle('admin-hidden');
+        } else {
+            alert("Wrong Password!");
         }
+    };
 
-        window.removeFromCart = (index) => {
-            cart.splice(index, 1);
-            updateCartUI();
-        };
+    loadProducts();
+</script>
 
-        window.processOrder = async () => {
-            const name = document.getElementById('cust-name').value;
-            const phone = document.getElementById('cust-phone').value;
-            const addr = document.getElementById('cust-address').value;
-            const pay = document.getElementById('payment-method').value;
-            const total = document.getElementById('cart-total').innerText;
-
-            if(!name || !phone || !addr) return alert("Please fill all details");
-
-            const invoiceNo = "MC-" + Math.floor(Math.random() * 100000);
-            let productListText = "";
-            cart.forEach(p => productListText += `- ${p.name} (Rs. ${p.price})\n`);
-
-            const whatsappMsg = `📦 *New Order: ${invoiceNo}*%0A--------------------------%0A👤 *Name:* ${name}%0A📞 *Phone:* ${phone}%0A📍 *Address:* ${addr}%0A--------------------------%0A🛍 *Items:*%0A${productListText}%0A--------------------------%0A💰 *Total:* ${total}%0A💳 *Payment:* ${pay}%0A--------------------------`;
-            
-            // Generate PDF Invoice
-            generatePDF(name, phone, addr, cart, total, invoiceNo);
-
-            // Redirect to WhatsApp
-            window.open(`https://wa.me/923310423620?text=${whatsappMsg}`, '_blank');
-        };
-
-        async function generatePDF(name, phone, addr, items, total, inv) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(20);
-            doc.text("METAL CANVAS-PK", 105, 20, { align: "center" });
-            doc.setFontSize(12);
-            doc.text(`Invoice No: ${inv}`, 14, 30);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 36);
-            doc.text(`Customer: ${name}`, 14, 42);
-            doc.text(`Phone: ${phone}`, 14, 48);
-            doc.text(`Address: ${addr}`, 14, 54);
-
-            const tableData = items.map(i => [i.name, i.category, i.price]);
-            doc.autoTable({
-                startY: 65,
-                head: [['Product', 'Category', 'Price']],
-                body: tableData,
-            });
-
-            doc.text(`Grand Total: ${total}`, 14, doc.lastAutoTable.finalY + 10);
-            doc.save(`Invoice_${inv}.pdf`);
-        }
-
-        window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
-        window.toggleAdmin = () => {
-            const pass = prompt("Enter Admin Password:");
-            if(pass === "admin123") { // Change this password
-                document.getElementById('admin-panel').classList.toggle('admin-hidden');
-            } else {
-                alert("Wrong Password!");
-            }
-        };
-
-        loadProducts();
-    </script>
 </body>
 </html>
